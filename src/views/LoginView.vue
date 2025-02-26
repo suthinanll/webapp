@@ -21,7 +21,7 @@ export default {
         user.value = result.user;
         console.log("✅ Login Success:", user.value);
         localStorage.setItem("user", JSON.stringify(user.value)); // 👉 เก็บข้อมูลไว้
-        router.push("/webapp/home"); // ไปหน้า Home หลัง Login สำเร็จ
+        router.push("/home"); // ไปหน้า Home หลัง Login สำเร็จ
       } catch (error) {
         console.error("❌ Login Error:", error);
       }
@@ -34,8 +34,12 @@ export default {
 
 <style scoped>
 .login-container {
+  width: 30%;
+  height: 15pc;
+  background-color: #9abaee;
   text-align: center;
-  margin-top: 50px;
+  margin: 150px auto 0 auto;
+  border-radius: 10px;
 }
 button {
   padding: 10px 20px;
@@ -44,8 +48,14 @@ button {
   border: none;
   cursor: pointer;
   font-size: 16px;
+  border-radius: 10px;
 }
 button:hover {
   background-color: #357ae8;
+}
+h2{
+  padding-top: 20px;
+  margin-bottom: 50px;
+  color: aliceblue;
 }
 </style>
