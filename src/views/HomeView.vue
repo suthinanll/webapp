@@ -71,7 +71,7 @@
       </div> -->
   
       <!-- ✅ แสดงรายชื่อวิชา -->
-      <h4 class="mb-3">รายชื่อวิชาของคุณ</h4>
+      <h4 class="mb-3" >รายชื่อวิชาของคุณ</h4>
       <div v-if="loading" class="text-center">
         <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
@@ -148,20 +148,20 @@
   
   // ฟังก์ชันไปยังหน้าห้องเรียน
   const goToClassroom = (cid) => {
-    router.push(`/mclass/${cid}`); // ไปยังหน้าจัดการห้องเรียน
+    router.push(`/webapp/mclass/${cid}`); // ไปยังหน้าจัดการห้องเรียน
   };
   
   const home = () => {
-    router.push("/home");
+    router.push("/webapp/home");
   };
   // ไปหน้าเพิ่มวิชา
   const addSubject = () => {
-    router.push("/addclass");
+    router.push("/webapp/addclass");
   };
   
   // ไปหน้าแก้ไขข้อมูล
   const editProfile = () => {
-    router.push("/edit-profile");
+    router.push("/webapp/edit-profile");
   };
   
   
@@ -209,8 +209,8 @@
   @import url('https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
   
   .container {
-    width: 70%;
-    margin-left: 280px; 
+    width: 80%;
+    margin-left: 250px; 
     padding-bottom: 80px; 
   }
   
@@ -239,6 +239,9 @@
     transition: all 0.4s ease;
     z-index: 999;
     padding: 10px;
+  }
+  h4{
+   text-align: center;
   }
   
   .sidebar.collapsed {

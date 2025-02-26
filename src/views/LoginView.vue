@@ -21,7 +21,7 @@ export default {
         user.value = result.user;
         console.log("✅ Login Success:", user.value);
         localStorage.setItem("user", JSON.stringify(user.value)); // 👉 เก็บข้อมูลไว้
-        router.push("/home"); // ไปหน้า Home หลัง Login สำเร็จ
+        router.push("/webapp/home"); // ไปหน้า Home หลัง Login สำเร็จ
       } catch (error) {
         console.error("❌ Login Error:", error);
       }

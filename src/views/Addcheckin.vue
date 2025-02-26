@@ -265,26 +265,26 @@
   // ฟังก์ชันไปหน้า Q&A
   const goToQnA = () => {
     if (cid.value) {
-      router.push(`/qa/${cid.value}`);
+      router.push(`/webapp/qa/${cid.value}`);
     }
   };
   
   const home = () => {
-    router.push("/home");
+    router.push("/webapp/home");
   };
   // ไปหน้าเพิ่มวิชา
   const addSubject = () => {
-    router.push("/addclass");
+    router.push("/webapp/addclass");
   };
   
   // ไปหน้าแก้ไขข้อมูล
   const editProfile = () => {
-    router.push("/edit-profile");
+    router.push("/webapp/edit-profile");
   };
   
   
   const goToClassroom = (cid) => {
-    router.push(`/mclass/${cid}`); // ไปยังหน้าจัดการห้องเรียน
+    router.push(`/webapp/mclass/${cid}`); // ไปยังหน้าจัดการห้องเรียน
   };
   
   

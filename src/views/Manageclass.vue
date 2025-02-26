@@ -237,7 +237,7 @@
   
   const goToAddcheckin = () => {
     if (cid.value) {
-      router.push(`/addcn/${cid.value}`);
+      router.push(`/webapp/addcn/${cid.value}`);
     }
   };
   
@@ -247,21 +247,21 @@
     }
   });
   const home = () => {
-    router.push("/home");
+    router.push("/webapp/home");
   };
   // ไปหน้าเพิ่มวิชา
   const addSubject = () => {
-    router.push("/addclass");
+    router.push("/webapp/addclass");
   };
   
   // ไปหน้าแก้ไขข้อมูล
   const editProfile = () => {
-    router.push("/edit-profile");
+    router.push("/webapp/edit-profile");
   };
   
   
   const goToClassroom = (cid) => {
-    router.push(`/mclass/${cid}`); // ไปยังหน้าจัดการห้องเรียน
+    router.push(`/webapp/mclass/${cid}`); // ไปยังหน้าจัดการห้องเรียน
   };
   
   

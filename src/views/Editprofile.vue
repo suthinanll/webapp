@@ -112,26 +112,26 @@
     // บันทึกข้อมูลและกลับไป Home
     const saveProfile = () => {
       localStorage.setItem("user", JSON.stringify(form.value)); // อัปเดตข้อมูล
-      router.push("/home"); // กลับหน้า Home
+      router.push("/webapp/home"); // กลับหน้า Home
     };
   
   
     const home = () => {
-    router.push("/home");
+    router.push("/webapp/home");
   };
     // ไปหน้าเพิ่มวิชา
   const addSubject = () => {
-    router.push("/addclass");
+    router.push("/webapp/addclass");
   };
   
   // ไปหน้าแก้ไขข้อมูล
   const editProfile = () => {
-    router.push("/edit-profile");
+    router.push("/webapp/edit-profile");
   };
   
   
   const goToClassroom = (cid) => {
-    router.push(`/mclass/${cid}`); // ไปยังหน้าจัดการห้องเรียน
+    router.push(`/webapp/mclass/${cid}`); // ไปยังหน้าจัดการห้องเรียน
   };
   
   
