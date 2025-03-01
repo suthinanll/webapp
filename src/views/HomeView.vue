@@ -101,106 +101,88 @@
   </template>
   
   <script setup>
-  import { ref, onMounted, onUnmounted } from "vue";
-  import { useRouter } from "vue-router";
-  import { auth, db } from "../services/firebase";
-  import { collection, getDocs } from "firebase/firestore";
-  
-  const router = useRouter();
-  const user = ref(null);
-  const classrooms = ref([]);
-  const loading = ref(true);
-  
-  // โหลดข้อมูลผู้ใช้จาก LocalStorage
-  onMounted(async () => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      user.value = JSON.parse(storedUser);
-      await loadClassrooms(); // เรียกใช้ฟังก์ชันดึงข้อมูลห้องเรียนทั้งหมด
-    } else {
-      router.push("/login");
-    }
-  });
-  
-  // ✅ โหลดข้อมูลห้องเรียนทั้งหมด
-  const loadClassrooms = async () => {
-    if (!user.value) return;
-  
-    try {
-      classrooms.value = [];
-      loading.value = true;
-  
-      // ดึงข้อมูลจาก collection "classroom" ทั้งหมด
-      const classroomsRef = collection(db, "classroom");
-      const snapshot = await getDocs(classroomsRef);
-  
-      // แปลงข้อมูลจาก snapshot ให้เป็น array
-      classrooms.value = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }));
-    } catch (error) {
-      console.error("Error loading classrooms:", error);
-    } finally {
-      loading.value = false;
-    }
-  };
-  
-  // ฟังก์ชันไปยังหน้าห้องเรียน
-  const goToClassroom = (cid) => {
-    router.push(`/webapp/mclass/${cid}`); // ไปยังหน้าจัดการห้องเรียน
-  };
-  
-  const home = () => {
+ import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { auth, db } from "../services/firebase";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+
+const router = useRouter();
+const user = ref(null);
+const classrooms = ref([]);
+const loading = ref(true);
+
+// โหลดข้อมูลผู้ใช้จาก LocalStorage
+onMounted(async () => {
+  const storedUser = localStorage.getItem("user");
+  if (storedUser) {
+    user.value = JSON.parse(storedUser);
+    await loadUserClassrooms();
+  } else {
+    router.push("/webapp/");
+  }
+});
+
+// ✅ โหลดรายวิชาของผู้ใช้
+const loadUserClassrooms = async () => {
+  if (!user.value) return;
+
+  try {
+    classrooms.value = [];
+    loading.value = true;
+
+    // ดึงข้อมูลจาก `/users/{uid}/classroom`
+    const userClassroomsRef = collection(db, `users/${user.value.uid}/classroom`);
+    const userClassroomsSnap = await getDocs(userClassroomsRef);
+
+    const fetchClassroomPromises = userClassroomsSnap.docs.map(async (docSnap) => {
+      const cid = docSnap.id;
+      const classRef = doc(db, `classroom/${cid}`);
+      const classSnap = await getDoc(classRef);
+
+      if (classSnap.exists()) {
+        return { id: cid, ...classSnap.data() };
+      }
+      return null;
+    });
+
+    // รอโหลดข้อมูลทั้งหมด
+    const classData = await Promise.all(fetchClassroomPromises);
+    classrooms.value = classData.filter((c) => c !== null);
+  } catch (error) {
+    console.error("Error loading classrooms:", error);
+  } finally {
+    loading.value = false;
+  }
+};
+const home = () => {
     router.push("/webapp/home");
   };
-  // ไปหน้าเพิ่มวิชา
-  const addSubject = () => {
-    router.push("/webapp/addclass");
-  };
-  
-  // ไปหน้าแก้ไขข้อมูล
-  const editProfile = () => {
-    router.push("/webapp/edit-profile");
-  };
-  
-  
-  
-  // ออกจากระบบ
-  const logout = async () => {
-    try {
-      await auth.signOut();
-      localStorage.removeItem("user");
-      router.push("/login");
-    } catch (error) {
-      console.error("Logout Error:", error);
-    }
-  };
-  
-  
-  
-  const isSidebarOpen = ref(false);
-  const isMobile = ref(window.innerWidth <= 768);
-  
-  const toggleSidebar = () => {
-    isSidebarOpen.value = !isSidebarOpen.value;
-  };
-  
-  const updateScreenSize = () => {
-    isMobile.value = window.innerWidth <= 768;
-    if (!isMobile.value) {
-      isSidebarOpen.value = true; // ให้ sidebar เปิดเสมอเมื่อเป็น desktop
-    }
-  };
-  
-  onMounted(() => {
-    window.addEventListener("resize", updateScreenSize);
-    updateScreenSize();
-  });
-  
-  onUnmounted(() => {
-    window.removeEventListener("resize", updateScreenSize);
-  });
+// ไปหน้าเพิ่มวิชา
+const addSubject = () => {
+  router.push("/webapp/addclass");
+};
+
+// ไปหน้าแก้ไขข้อมูล
+const editProfile = () => {
+  router.push("/webapp/edit-profile");
+};
+
+
+const goToClassroom = (cid) => {
+  router.push(`/webapp/mclass/${cid}`); // ไปยังหน้าจัดการห้องเรียน
+};
+
+
+// ออกจากระบบ
+const logout = async () => {
+  try {
+    await auth.signOut();
+    localStorage.removeItem("user");
+    router.push("/webapp/");
+  } catch (error) {
+    console.error("Logout Error:", error);
+  }
+};
   
   </script>
   
