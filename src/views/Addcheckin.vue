@@ -74,13 +74,19 @@
           <p class="card-text"><strong>รหัสวิชา:</strong> {{ classroom.code }}</p>
           <p class="card-text"><strong>ชื่อวิชา:</strong> {{ classroom.name }}</p>
 
+
           <!-- ปุ่มต่าง ๆ -->
+          <div class="d-flex align-items-center mb-3">
+            <button @click="generateQRCode" class="btn btn-primary">แสดง QR Code </button>
+            <div v-if="qrCodeUrl" class="ms-3">
+              <img :src="qrCodeUrl" alt="QR Code" />
+            </div>
+          </div>
 
           <div class="d-flex gap-2 mt-3">
             <button @click="toggleCheckin" class="btn" :class="checkinStatus ? 'btn-success' : 'btn-secondary'">
               {{ checkinStatus ? 'ปิดเช็คชื่อ' : 'เปิดเช็คชื่อ' }}
             </button>
-            <button @click="generateQRCode" class="btn btn-primary">แสดง QR Code</button>
             <button @click="goToQnA" class="btn btn-warning">ถาม-ตอบ</button>
           </div>
 
@@ -193,6 +199,8 @@ import {
   query, orderBy, limit, getDocs, addDoc,deleteDoc
 } from "firebase/firestore";
 
+import QRCode from "qrcode";
+
 
 const route = useRoute();
 const router = useRouter();
@@ -208,7 +216,17 @@ const cno = ref(""); // ค่า check-in number
 const studentList = ref([]); // เก็บข้อมูลรายชื่อนักเรียน
 const showTable = ref(false); // ควบคุมการแสดง/ซ่อนตาราง
 const scoreList = ref([]);
+const qrCodeUrl = ref(""); // ถ้าใช้ Composition API
 
+
+const generateQRCode = async () => {
+  try {
+    if (!cid.value) return;
+    qrCodeUrl.value = await QRCode.toDataURL(cid.value);
+  } catch (error) {
+    console.error("Error generating QR Code:", error);
+  }
+};
 
 const getLastCno = async () => {
   if (!cid.value) {

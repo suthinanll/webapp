@@ -79,10 +79,7 @@
 
         <!-- ฟอร์มเพิ่มคำถามใหม่  -->
         <div v-if="showAddQuestionForm" class="mb-4">
-          <div class="mb-4">
-            <label for="questionNo" class="form-label">ข้อที่</label>
-            <input v-model="questionNo" type="number" class="form-control" id="questionNo" placeholder="กรอกข้อที่">
-          </div>
+         
           <div class="mb-4">
             <label for="questionText" class="form-label">ข้อความคำถาม</label>
             <input v-model="questionText" type="text" class="form-control" id="questionText"
@@ -118,10 +115,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(answer, index) in answers" :key="index" class="hover:bg-gray-100">
+            <tr v-for="(answer, index) in answers" :key="answer.id" class="hover:bg-gray-100">
               <td class="border border-gray-300 px-4 py-2 text-center">{{ index + 1 }}</td>
-              <td class="border border-gray-300 px-4 py-2 text-center">{{ answer.student_id }}</td>
-              <td class="border border-gray-300 px-4 py-2">{{ answer.answer_text }}</td>
+              <td class="border border-gray-300 px-4 py-2 text-center">{{ answer.stdid }}</td>
+              <td class="border border-gray-300 px-4 py-2">{{ answer.text }}</td>
             </tr>
           </tbody>
         </table>
@@ -138,38 +135,33 @@ import { ref, onMounted, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { db } from "../services/firebase";
 import {
-  writeBatch,
   doc,
   setDoc,
   updateDoc,
   onSnapshot,
   collection,
-  addDoc,
   query,
   where,
-  deleteDoc,
-  getDocs
+  getDocs,
+  getDoc
 } from "firebase/firestore";
 
 const route = useRoute();
 const router = useRouter();
 
-const cid = ref(route.params.cid || null);  // ตรวจสอบว่ามีค่า cid หรือไม่
-const cno = ref(route.params.cno || null);  // ตรวจสอบว่า cno ถูกกำหนดมาหรือไม่
+const cid = ref(route.params.cid || null);
+const cno = ref(route.params.cno || null);
 const loading = ref(true);
 const classroom = ref({});
-const questionNo = ref(null);
+const qno = ref(null); // ✅ เพิ่มตัวแปร qno
 const questionText = ref("");
-const questions = ref([]);  // เก็บคำถามทั้งหมด
+const questions = ref([]);
 const answers = ref([]);
-const showAddQuestionForm = ref(false);  // ใช้สำหรับควบคุมการแสดงฟอร์มคำถามใหม่
+const showAddQuestionForm = ref(false);
 
-// ฟังก์ชันดึง cno ล่าสุด
+// ✅ ฟังก์ชันดึง `cno` ล่าสุด
 const getLastCno = async () => {
-  if (!cid.value) {
-    console.warn("ยังไม่มีข้อมูลรหัสวิชา");
-    return null;
-  }
+  if (!cid.value) return null;
 
   try {
     const checkinRef = collection(db, `classroom/${cid.value}/checkin`);
@@ -177,30 +169,49 @@ const getLastCno = async () => {
 
     if (!snapshot.empty) {
       const latestCno = Math.max(...snapshot.docs.map((doc) => Number(doc.id))).toString();
-      console.log("cno ล่าสุด:", latestCno);
+      console.log("📌 cno ล่าสุด:", latestCno);
       return latestCno;
-    } else {
-      console.warn("ไม่มีข้อมูลการเช็คชื่อ");
-      return null;
     }
   } catch (error) {
-    console.error("เกิดข้อผิดพลาดในการดึงข้อมูล checkin:", error);
-    return null;
+    console.error("❌ ดึง cno ไม่สำเร็จ:", error);
+  }
+  return null;
+};
+
+const fetchQuestionNo = async () => {
+  if (!cid.value || !cno.value) return;
+
+  try {
+    const questionDoc = doc(db, `classroom/${cid.value}/checkin/${cno.value}`); // ✅ สร้าง DocumentReference
+    const questionSnap = await getDoc(questionDoc); // ✅ ใช้ getDoc() แทน getDocs()
+
+    if (questionSnap.exists()) {
+      const questionData = questionSnap.data();
+      qno.value = questionData.question_no || "1"; // ✅ ใช้ค่าเริ่มต้นเป็น "1" ถ้าไม่มี
+      console.log("📌 ดึง question_no สำเร็จ:", qno.value);
+    } else {
+      console.warn("❌ ไม่มีข้อมูล question_no ใน Firestore");
+    }
+  } catch (error) {
+    console.error("❌ ดึง question_no ไม่สำเร็จ:", error);
   }
 };
 
-// โหลดข้อมูลห้องเรียนจาก Firebase
+// ✅ โหลดข้อมูลเริ่มต้น
 onMounted(async () => {
   if (!cno.value) {
-    cno.value = await getLastCno(); // ถ้าไม่มี cno ให้ดึง cno ล่าสุดมาใช้
+    cno.value = await getLastCno();
   }
-
+  
   if (!cid.value || !cno.value) {
-    console.error("ข้อมูล cid หรือ cno ไม่สมบูรณ์");
+    console.error("❌ ข้อมูล cid หรือ cno ไม่สมบูรณ์");
     return;
   }
 
-  // โหลดข้อมูลห้องเรียน
+  // ดึง question_no ก่อน
+  await fetchQuestionNo();
+
+  // ✅ โหลดคำถามจาก Firestore
   const checkinRef = doc(db, `classroom/${cid.value}/checkin/${cno.value}`);
   onSnapshot(checkinRef, (docSnapshot) => {
     const data = docSnapshot.data();
@@ -213,111 +224,93 @@ onMounted(async () => {
     }
   });
 
-  // โหลดคำถามจาก Firebase
-  const questionsRef = collection(db, `classroom/${cid.value}/checkin/${cno.value}/questions`);
-  onSnapshot(questionsRef, (snapshot) => {
-    questions.value = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-  });
-
-  // โหลดคำตอบที่ถูกตอบแล้ว
-  const answersRef = collection(db, `classroom/${cid.value}/checkin/${cno.value}/answers`);
-  const q = query(answersRef, where("answered", "==", true));
-  onSnapshot(q, (snapshot) => {
-    answers.value = snapshot.docs.map(doc => doc.data());
-  });
+  // ✅ โหลดคำตอบที่ถูกตอบแล้ว
+  loadAnswers();
 
   loading.value = false;
 });
 
-// ฟังก์ชันเริ่มคำถาม
-const startQuestion = async () => {
-  if (!cid.value || !cno.value) return;
+// ✅ โหลดคำตอบจาก Firestore
+const loadAnswers = async () => {
+  if (!cid.value || !cno.value || !qno.value) {
+    console.warn("⚠️ ขาดค่า cid, cno หรือ qno");
+    return;
+  }
+
+  const studentsCollection = collection(
+    db,
+    `classroom/${cid.value}/checkin/${cno.value}/answers/${qno.value}/students`
+  );
+
+  onSnapshot(studentsCollection, (snapshot) => {
+    if (snapshot.empty) {
+      console.warn("❌ ไม่มีข้อมูลใน students");
+    } else {
+      answers.value = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        console.log("📌 ข้อมูลเอกสาร Firestore:", data);
+
+        return {
+          id: doc.id,
+          text: data.text || "ไม่มีข้อมูล",
+          stdid: data.stdid,
+        };
+      });
+
+      console.log("✅ ข้อมูลคำตอบที่โหลดมา:", answers.value);
+    }
+  });
+};
+
+// ✅ ใช้ watchEffect() เพื่อโหลดคำตอบเมื่อ qno เปลี่ยนแปลง
+watchEffect(() => {
+  if (qno.value) {
+    console.log("📌 เรียก loadAnswers() เมื่อ qno เปลี่ยน:", qno.value);
+    loadAnswers();
+  }
+});
+
+// ✅ ฟังก์ชันเพิ่มคำถามใหม่
+const addNewQuestion = async () => {
+  if (!cid.value || !cno.value || !questionText.value) return;
+
   try {
     const checkinRef = doc(db, `classroom/${cid.value}/checkin/${cno.value}`);
-    await updateDoc(checkinRef, { question_show: true });
+    await updateDoc(checkinRef, {
+      question_no: qno.value,
+      question_text: questionText.value,
+      question_show: true,
+      timestamp: new Date(),
+    });
+
+    questionText.value = "";
+    showAddQuestionForm.value = false;
   } catch (error) {
-    console.error("Error starting question: ", error);
+    console.error("❌ เพิ่มคำถามไม่สำเร็จ:", error);
   }
 };
 
-// ฟังก์ชันปิดคำถาม
+// ✅ ฟังก์ชันเปิด/ปิดฟอร์มเพิ่มคำถาม
+const toggleAddQuestionForm = () => {
+  showAddQuestionForm.value = !showAddQuestionForm.value;
+};
+
+// ✅ ฟังก์ชันปิดคำถาม
 const closeQuestion = async () => {
   if (!cid.value || !cno.value) return;
   try {
     const checkinRef = doc(db, `classroom/${cid.value}/checkin/${cno.value}`);
     await updateDoc(checkinRef, { question_show: false });
   } catch (error) {
-    console.error("Error closing question: ", error);
+    console.error("❌ ปิดคำถามไม่สำเร็จ:", error);
   }
 };
 
-
-
-// ฟังก์ชันเพิ่มคำถามใหม่
-const addNewQuestion = async () => {
-  if (!cid.value || !cno.value) return;
-  if (questionNo.value && questionText.value) {
-    try {
-      const checkinRef = doc(db, `classroom/${cid.value}/checkin/${cno.value}`);
-      await updateDoc(checkinRef, {
-        question_no: questionNo.value,
-        question_text: questionText.value,
-        question_show: true,
-        timestamp: new Date(),
-      });
-
-      // ล้างค่า input หลังเพิ่มสำเร็จ
-      questionNo.value = null;
-      questionText.value = "";
-      showAddQuestionForm.value = false;  // ปิดฟอร์ม
-    } catch (error) {
-      console.error("Error adding question: ", error);
-    }
-  }
-};
-
-// ฟังก์ชันเปิด/ปิดฟอร์มเพิ่มคำถาม
-const toggleAddQuestionForm = () => {
-  showAddQuestionForm.value = !showAddQuestionForm.value;
-};
-
-
-
-
-
-
-
-
-
-const home = () => {
-  router.push("/webapp/home");
-};
-// ไปหน้าเพิ่มวิชา
-const addSubject = () => {
-  router.push("/webapp/addclass");
-};
-
-// ไปหน้าแก้ไขข้อมูล
-const editProfile = () => {
-  router.push("/webapp/edit-profile");
-};
-
-
-const goToClassroom = (cid) => {
-  router.push(`/webapp/mclass/${cid}`); // ไปยังหน้าจัดการห้องเรียน
-};
-
-
-// ออกจากระบบ
-const logout = async () => {
-  try {
-    await auth.signOut();
-    localStorage.removeItem("user");
-    router.push("/login");
-  } catch (error) {
-    console.error("Logout Error:", error);
-  }
-};
+// ✅ ฟังก์ชันนำทางไปหน้าต่าง ๆ
+const home = () => router.push("/webapp/home");
+const addSubject = () => router.push("/webapp/addclass");
+const editProfile = () => router.push("/webapp/edit-profile");
+const goToClassroom = (cid) => router.push(`/webapp/mclass/${cid}`);
 
 
 </script>

@@ -19,6 +19,11 @@ const routes = [
   { path: "/webapp/mclass/:cid", component: Manageclass }, // ต้องรองรับ CID
   { path: "/webapp/addcn/:cid", component: Addcheckin }, // ต้องรองรับ CID
   { path: "/webapp/qa/:cid", component: QA }, // ต้องรองรับ CID
+  {
+    path: "/webapp/addcn/:cid/:cno",
+    component: Addcheckin,
+    props: true, // ✅ เปิดใช้งาน props
+  }
 
 
 ];
